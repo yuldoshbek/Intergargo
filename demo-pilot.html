@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Europe Pilot Demo - Content Platform Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f8f9fa;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: #1C1C1C;
+            margin-bottom: 16px;
+            font-size: 32px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 40px;
+            font-size: 18px;
+        }
+
+        .section {
+            background: white;
+            padding: 32px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        h2 {
+            color: #EB2A2A;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+
+        .route-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+
+        .route-card {
+            padding: 20px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+
+        .route-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 16px rgba(235, 42, 42, 0.15);
+            border-color: #EB2A2A;
+        }
+
+        .route-title {
+            font-weight: 700;
+            font-size: 16px;
+            margin-bottom: 8px;
+            color: #1C1C1C;
+        }
+
+        .route-direction {
+            font-size: 13px;
+            color: #666;
+            display: inline-block;
+            padding: 4px 12px;
+            background: rgba(235, 42, 42, 0.1);
+            border-radius: 12px;
+            font-weight: 600;
+            color: #EB2A2A;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            padding: 24px;
+            background: linear-gradient(135deg, #EB2A2A, #c62828);
+            color: white;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 36px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .instructions {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+
+        .instructions h3 {
+            color: #856404;
+            margin-bottom: 12px;
+        }
+
+        .instructions ol {
+            margin-left: 20px;
+            color: #856404;
+        }
+
+        .instructions li {
+            margin-bottom: 8px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            background: #28a745;
+            color: white;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🚀 Europe Pilot - Content Platform Demo</h1>
+        <p class="subtitle">100-page pilot: Germany ↔ Europe with Export/Import logic</p>
+
+        <div class="instructions">
+            <h3>📋 Инструкция по тестированию:</h3>
+            <ol>
+                <li>Нажмите на любую карточку маршрута ниже</li>
+                <li>Откроется основная страница с динамическим контентом</li>
+                <li>Проверьте <strong>Селекторы</strong>: Теперь они показывают только Германию и страны Европы!</li>
+                <li>Проверьте <strong>URL</strong>: Он будет вида <code>?from_city=Germany&to_city=France</code></li>
+                <li>Сравните <strong>Export</strong> (DE → X) и <strong>Import</strong> (X → DE) - разная логика тегов и
+                    текстов</li>
+            </ol>
+        </div>
+
+        <div class="section">
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-number">72</div>
+                    <div class="stat-label">Total Routes</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">36</div>
+                    <div class="stat-label">Export (DE → EU)</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">36</div>
+                    <div class="stat-label">Import (EU → DE)</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">37</div>
+                    <div class="stat-label">Countries</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>🇩🇪 Export from Germany (DE → Europe)</h2>
+            <p style="color: #666; margin-bottom: 16px;">Focus: EX-1, T1 documents, German export regulations</p>
+            <div class="route-grid" id="export-routes"></div>
+        </div>
+
+        <div class="section">
+            <h2>🇪🇺 Import to Germany (Europe → DE)</h2>
+            <p style="color: #666; margin-bottom: 16px;">Focus: Verzollung, residence permits, tax refunds</p>
+            <div class="route-grid" id="import-routes"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { PILOT_ROUTES } from './js/data/routes-pilot.js';
+        import { EUROPE_COUNTRIES, GERMANY } from './js/data/europe-countries.js';
+
+        // Separate routes by direction
+        const exportRoutes = PILOT_ROUTES.filter(r => r.direction === 'export');
+        const importRoutes = PILOT_ROUTES.filter(r => r.direction === 'import');
+
+        // Render export routes (Germany -> Europe)
+        const exportContainer = document.getElementById('export-routes');
+        exportRoutes.slice(0, 40).forEach(route => {
+            const toCountry = EUROPE_COUNTRIES[route.to];
+            if (!toCountry) return;
+
+            const card = document.createElement('a');
+            card.className = 'route-card';
+            // NEW LOGIC: Use Country Names directly
+            card.href = `index.html?from_city=Germany&to_city=${route.to}`;
+
+            card.innerHTML = `
+                <div class="route-title">Германия → ${toCountry.ru}</div>
+                <span class="route-direction">EXPORT</span>
+            `;
+            exportContainer.appendChild(card);
+        });
+
+        // Render import routes (Europe -> Germany)
+        const importContainer = document.getElementById('import-routes');
+        importRoutes.slice(0, 40).forEach(route => {
+            const fromCountry = EUROPE_COUNTRIES[route.from];
+            if (!fromCountry) return;
+
+            const card = document.createElement('a');
+            card.className = 'route-card';
+            // NEW LOGIC: Use Country Names directly
+            card.href = `index.html?from_city=${route.from}&to_city=Germany`;
+
+            card.innerHTML = `
+                <div class="route-title">${fromCountry.ru} → Германия</div>
+                <span class="route-direction">IMPORT</span>
+            `;
+            importContainer.appendChild(card);
+        });
+
+        console.log('✅ Demo loaded: Showing routes. Links updated to use Country Params (Pilot Architecture).');
+    </script>
+</body>
+
+</html>
