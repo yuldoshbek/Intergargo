@@ -4,20 +4,63 @@
  */
 
 /**
+ * Helper: Resolve Name
+ */
+function getName(obj, lang) {
+    if (!obj) return '';
+    if (obj.names && obj.names[lang]) return obj.names[lang]; // V2
+    return obj[lang] || obj.slug || 'Unknown'; // Legacy
+}
+
+/**
+ * Helper: Resolve Preposition
+ */
+function getPreposition(obj, type, lang) {
+    if (!obj) return '';
+    if (obj.prepositions && obj.prepositions[type] && obj.prepositions[type][lang]) {
+        return obj.prepositions[type][lang];
+    }
+    // Legacy fallback
+    if (type === 'from') {
+        if (lang === 'ru' && obj.from) return obj.from;
+        if (lang === 'en') return obj.en;
+    }
+    if (type === 'to') {
+        if (lang === 'ru' && obj.to) return obj.to;
+        if (lang === 'en') return "to " + obj.en;
+    }
+    return getName(obj, lang);
+}
+
+/**
  * Update SEO meta tags based on route
  */
 export function updateSEO(cityFrom, cityTo, language) {
+    const fromName = getPreposition(cityFrom, 'from', language);
+    const toName = getPreposition(cityTo, 'to', language);
+
     // Title
-    const title = language === 'ru'
-        ? `Переезд из ${cityFrom.from} ${cityTo.to} под ключ | Intrelo`
-        : `Relocation from ${cityFrom.en} to ${cityTo.en} | Intrelo`;
+    let title;
+    if (language === 'ru') {
+        title = `Переезд из ${fromName} ${toName} под ключ | Intrelo`;
+    } else {
+        // English Names for generic format
+        const fromEn = getName(cityFrom, 'en');
+        const toEn = getName(cityTo, 'en');
+        title = `Relocation from ${fromEn} to ${toEn} | Intrelo`;
+    }
 
     document.title = title;
 
     // Meta Description
-    const description = language === 'ru'
-        ? `Профессиональный переезд ${cityFrom.from} ${cityTo.to}. Упаковка, таможня, доставка door-to-door. 20 лет опыта в международных переездах.`
-        : `Professional relocation from ${cityFrom.en} to ${cityTo.en}. Packing, customs, door-to-door delivery. 20 years of international moving experience.`;
+    let description;
+    if (language === 'ru') {
+        description = `Профессиональный переезд ${fromName} ${toName}. Упаковка, таможня, доставка door-to-door. 20 лет опыта в международных переездах.`;
+    } else {
+        const fromEn = getName(cityFrom, 'en');
+        const toEn = getName(cityTo, 'en');
+        description = `Professional relocation from ${fromEn} to ${toEn}. Packing, customs, door-to-door delivery. 20 years of international moving experience.`;
+    }
 
     let metaDesc = document.querySelector('meta[name="description"]');
     if (metaDesc) {
@@ -39,7 +82,7 @@ function updateOpenGraph(cityFrom, cityTo, title, description, language) {
     if (ogTitle) ogTitle.setAttribute('content', title);
     if (ogDesc) ogDesc.setAttribute('content', description);
     if (ogUrl) {
-        const url = `https://intrelo.com/international-moving/${cityFrom.slug}-${cityTo.slug}`;
+        const url = `https://intrelo.com/${language}/international-moving/${cityFrom.slug}-${cityTo.slug}`;
         ogUrl.setAttribute('content', url);
     }
 }
@@ -48,8 +91,12 @@ function updateOpenGraph(cityFrom, cityTo, title, description, language) {
  * Generate and inject Schema.org JSON-LD structured data
  */
 export function injectSchemaOrg(cityFrom, cityTo, language) {
-    const routeSlug = `${cityFrom.slug}-${cityTo.slug}`;
     const baseUrl = 'https://intrelo.com';
+
+    const fromName = getName(cityFrom, language);
+    const toName = getName(cityTo, language);
+    const fromPrep = getPreposition(cityFrom, 'from', language);
+    const toPrep = getPreposition(cityTo, 'to', language);
 
     // BreadcrumbList Schema
     const breadcrumbSchema = {
@@ -71,7 +118,7 @@ export function injectSchemaOrg(cityFrom, cityTo, language) {
             {
                 "@type": "ListItem",
                 "position": 3,
-                "name": `${cityFrom[language]} → ${cityTo[language]}`
+                "name": `${fromName} → ${toName}`
             }
         ]
     };
@@ -95,16 +142,16 @@ export function injectSchemaOrg(cityFrom, cityTo, language) {
         "areaServed": [
             {
                 "@type": "City",
-                "name": cityFrom.en
+                "name": getName(cityFrom, 'en')
             },
             {
                 "@type": "City",
-                "name": cityTo.en
+                "name": getName(cityTo, 'en')
             }
         ],
         "description": language === 'ru'
-            ? `Переезд ${cityFrom.from} ${cityTo.to} под ключ`
-            : `Turnkey relocation from ${cityFrom.en} to ${cityTo.en}`
+            ? `Переезд ${fromPrep} ${toPrep} под ключ`
+            : `Turnkey relocation from ${getName(cityFrom, 'en')} to ${getName(cityTo, 'en')}`
     };
 
     // Remove existing schema scripts

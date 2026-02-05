@@ -2,13 +2,20 @@
   publish = "."
   command = "echo 'Static site, no build needed'"
 
+# SPA Fallback for Pilot v2 Routes
 [[redirects]]
-  from = "/international-moving/:route"
+  from = "/*/international-moving/*"
   to = "/index.html"
   status = 200
 
 [[redirects]]
-  from = "/international-moving"
+  from = "/international-moving/*"
+  to = "/index.html"
+  status = 200
+
+# Global Fallback
+[[redirects]]
+  from = "/*"
   to = "/index.html"
   status = 200
 

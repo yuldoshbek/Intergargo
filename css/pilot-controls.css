@@ -1,0 +1,95 @@
+/* Pilot v2 Controls Styling */
+
+.pilot-controls-wrapper {
+    margin: 24px 0 32px;
+    width: 100%;
+    max-width: 800px;
+}
+
+.demo-controls.pilot-controls {
+    background: #ffffff;
+    border: 1px solid rgba(0,0,0,0.08);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+    border-radius: 12px;
+    padding: 16px 24px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+    align-items: center;
+    position: relative; /* Not fixed */
+    bottom: auto;
+    right: auto;
+    z-index: 10;
+}
+
+.controls-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    align-items: center;
+    width: 100%;
+}
+
+.control-header {
+    display: none; /* Hide debug header in embedded mode */
+}
+
+.control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1;
+    min-width: 140px;
+}
+
+.control-group label {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #888;
+    font-weight: 600;
+}
+
+.control-group select {
+    width: 100%;
+    padding: 10px 14px;
+    font-size: 15px;
+    color: #333;
+    background-color: #f9f9f9;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23333%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px top 50%;
+    background-size: 10px auto;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.control-group select:hover {
+    border-color: #bbb;
+}
+
+.control-group select:focus {
+    outline: none;
+    border-color: #EB2A2A; /* Brand Red */
+    background-color: #fff;
+    box-shadow: 0 0 0 3px rgba(235, 42, 42, 0.1);
+}
+
+@media (max-width: 768px) {
+    .pilot-controls-wrapper {
+        margin: 16px 0;
+    }
+    
+    .demo-controls.pilot-controls {
+        padding: 16px;
+        gap: 16px;
+    }
+
+    .control-group {
+        min-width: 100%; /* Stack on mobile */
+    }
+}

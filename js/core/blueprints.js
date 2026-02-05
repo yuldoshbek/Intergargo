@@ -1,259 +1,172 @@
 /**
  * MEANING BLUEPRINTS
  * 
- * Core concept: These define WHAT to say (meaning), not HOW to say it (exact words).
- * Each blueprint contains 2-3 key points that MUST be conveyed in the generated text.
- * 
- * The content generator will:
- * 1. Read the blueprint for a block
- * 2. Generate unique text that preserves these core meanings
- * 3. Use deterministic variation (same route = same text)
+ * Core concept: Each blueprint defines WHAT to say in 3 languages.
+ * The generator deterministicly selects variations.
  */
 
 export const BLUEPRINTS = {
     /**
      * CUSTOMS BLOCK
-     * Different logic for export vs import
      */
     customs: {
-        // Germany -> EU Country (Export)
+        // Export (Germany -> Out)
         export: {
-            meaning: [
-                "Экспорт личных вещей из Германии требует оформления документов EX-1 или T1",
-                "Мы готовим полный пакет документов: детальную опись имущества и таможенную декларацию",
-                "Для стран ЕС процедура упрощённая, для не-ЕС стран (Великобритания, Швейцария, Сербия) — полная таможня"
-            ],
+            meaning: {
+                ru: [
+                    "Экспорт личных вещей из Германии требует оформления документов EX-1 или T1.",
+                    "Мы готовим полный пакет документов: детальную опись имущества и таможенную декларацию.",
+                    "Для стран ЕС процедура упрощённая, для не-ЕС (Великобритания, РФ) — полная таможенная очистка."
+                ],
+                en: [
+                    "Exporting personal effects from Germany requires EX-1 or T1 documentation.",
+                    "We prepare the full package: detailed inventory list and customs declaration.",
+                    "Simplified procedure for EU; full customs clearance for non-EU (UK, Russia)."
+                ],
+                de: [
+                    "Der Export von Umzugsgut aus Deutschland erfordert EX-1 oder T1 Dokumente.",
+                    "Wir erstellen alle Unterlagen: detaillierte Inventarliste und Ausfuhranmeldung.",
+                    "Vereinfachtes Verfahren für EU; volle Zollabfertigung für Nicht-EU (UK, Russland)."
+                ]
+            },
             logic_tags_eu: ["EX-1", "T1", "EU-SIMPLIFIED"],
             logic_tags_non_eu: ["EX-1", "FULL-CUSTOMS", "BORDER-CONTROL"]
         },
 
-        // EU Country -> Germany (Import)
+        // Import (In -> Germany)
         import: {
-            meaning: [
-                "Ввоз личных вещей в Германию (Verzollung) освобождён от пошлин при переезде на постоянное место жительства",
-                "Необходимо подтверждение статуса резидента или разрешение на проживание (Aufenthaltstitel)",
-                "Мы оформляем возврат НДС для граждан, выезжающих из стран ЕС, и помогаем с арендой жилья в Германии"
-            ],
+            meaning: {
+                ru: [
+                    "Ввоз личных вещей в Германию (Verzollung) освобождён от пошлин при переезде на ПМЖ.",
+                    "Необходимо подтверждение статуса резидента или разрешение на проживание (Aufenthaltstitel).",
+                    "Мы оформляем растаможку и помогаем с бюрократией."
+                ],
+                en: [
+                    "Importing personal effects into Germany (Verzollung) is duty-free for relocation.",
+                    "Proof of residence or residence permit (Aufenthaltstitel) is required.",
+                    "We handle customs clearance and assist with bureaucracy."
+                ],
+                de: [
+                    "Die Einfuhr von Umzugsgut nach Deutschland ist bei Wohnsitzwechsel zollfrei.",
+                    "Aufenthaltstitel oder Meldebescheinigung ist erforderlich.",
+                    "Wir kümmern uns um die Verzollung und Formalitäten."
+                ]
+            },
             logic_tags_eu: ["VERZOLLUNG", "TAX-FREE", "RESIDENCE-PERMIT"],
             logic_tags_non_eu: ["IMPORT-DUTIES", "FULL-DECLARATION", "VAT-REFUND"]
         }
     },
 
     /**
-     * TIMELINES BLOCK
-     * Delivery time estimates based on route and EU status
+     * TIMELINES
      */
     timelines: {
-        meaning: [
-            "Срок доставки зависит от маршрута и выбранного транспорта",
-            "Для стран ЕС — прямой маршрут без таможенных остановок (3-7 дней)",
-            "Для не-ЕС стран (Великобритания после Brexit, Швейцария, Сербия) — с учётом таможни (7-14 дней)"
-        ],
-        // Time ranges by route type
+        meaning: {
+            ru: [
+                "Срок доставки зависит от маршрута и выбранного транспорта.",
+                "Прямые рейсы по Европе занимают 3-7 дней.",
+                "Маршруты с таможней (РФ, UK) занимают 7-14 дней."
+            ],
+            en: [
+                "Delivery time depends on the route and transport mode.",
+                "Direct shipments within Europe take 3-7 days.",
+                "Routes with customs (Russia, UK) take 7-14 days."
+            ],
+            de: [
+                "Die Lieferzeit hängt von der Route und dem Transportmittel ab.",
+                "Direktfahrten in Europa dauern 3-7 Tage.",
+                "Routen mit Zollabfertigung (Russland, UK) dauern 7-14 Tage."
+            ]
+        },
         time_ranges: {
-            eu_core: "3-5 дней",          // Germany <-> FR, ES, IT, NL, BE, AT, PL
-            eu_nordic: "5-7 дней",        // Germany <-> SE, DK, FI
-            eu_eastern: "4-6 дней",       // Germany <-> HU, CZ, SK, SI
-            eu_southern: "5-8 дней",      // Germany <-> GR, PT, Cyprus, Malta
-            non_eu_uk: "7-10 дней",       // Germany <-> UK (Brexit customs)
-            non_eu_balkan: "10-14 дней",  // Germany <-> RS, ME, AL, MK
-            non_eu_switzerland: "5-7 дней" // Germany <-> CH (special rules)
+            eu_core: "3-5 days",
+            eu_nordic: "5-7 days",
+            eu_eastern: "4-6 days",
+            eu_southern: "5-8 days",
+            non_eu_uk: "7-10 days",
+            non_eu_balkan: "10-14 days",
+            non_eu_switzerland: "5-7 days",
+            non_eu_russia: "14-21 days"
         }
     },
 
     /**
-     * INTERNAL LINKS BLOCK
-     * Cross-linking between related routes for SEO
+     * PROCESS
      */
-    internal_links: {
-        meaning: [
-            "Ссылки на популярные маршруты из той же страны отправления",
-            "Ссылка на обратное направление (экспорт ↔ импорт)",
-            "Ссылки на соседние страны или альтернативные направления"
-        ],
-        // Link generation rules
-        rules: {
-            same_origin: 3,      // 3 links to routes with same origin country
-            reverse_direction: 1, // 1 link to reverse route (DE->FR links to FR->DE)
-            popular_routes: 2    // 2 links to most popular European routes
-        },
-        popular_european_routes: [
-            "germany-france",
-            "germany-spain",
-            "germany-italy",
-            "france-germany",
-            "spain-germany",
-            "italy-germany"
-        ]
-    },
-
-    /**
-     * HERO BLOCK
-     * Title and subtitle for each route
-     */
-    hero: {
-        export: {
-            meaning: [
-                "Профессиональная организация переезда из Германии",
-                "Полный комплекс услуг: упаковка, таможня, доставка door-to-door",
-                "Экспорт личных вещей с соблюдением всех немецких и европейских требований"
-            ]
-        },
-        import: {
-            meaning: [
-                "Организация переезда в Германию под ключ",
-                "Помощь с таможней (Verzollung), растаможкой и оформлением документов",
-                "Поддержка в аренде жилья и адаптации для новых резидентов Германии"
+    process: {
+        meaning: {
+            ru: [
+                "1. Оценка и договор",
+                "2. Упаковка вещей",
+                "3. Таможенное оформление",
+                "4. Доставка и разгрузка"
+            ],
+            en: [
+                "1. Quote & Contract",
+                "2. Professional Packing",
+                "3. Customs Clearance",
+                "4. Delivery & Unloading"
+            ],
+            de: [
+                "1. Angebot & Vertrag",
+                "2. Professionelle Verpackung",
+                "3. Zollabwicklung",
+                "4. Lieferung & Entladen"
             ]
         }
     },
 
     /**
-     * FAQ BLOCK
-     * Common questions, different for export vs import
+     * FAQ Templates
      */
     faq: {
         export: {
-            common_questions: [
+            // Arrays of Question Objects per language? 
+            // Better structure: list of topics, each has translations
+            questions: [
                 {
-                    topic: "cost",
-                    meaning: "Стоимость зависит от объёма груза (м³) и транспорта. Бесплатный расчёт за 24 часа."
+                    id: "cost",
+                    q: {
+                        ru: "Сколько стоит переезд?",
+                        en: "How much does the move cost?",
+                        de: "Was kostet der Umzug?"
+                    },
+                    a: {
+                        ru: "Стоимость зависит от объёма. Запросите бесплатную смету.",
+                        en: "Cost depends on volume. Request a free quote.",
+                        de: "Die Kosten hängen vom Volumen ab. Fragen Sie ein kostenloses Angebot an."
+                    }
                 },
                 {
-                    topic: "documents",
-                    meaning: "Какие документы нужны для экспорта из Германии? EX-1, опись имущества, договор."
-                },
-                {
-                    topic: "time",
-                    meaning: "Сроки зависят от направления: ЕС быстрее (3-7 дней), не-ЕС дольше (7-14 дней)."
-                },
-                {
-                    topic: "insurance",
-                    meaning: "Страхование груза включено. Полная компенсация при повреждении."
+                    id: "docs",
+                    q: {
+                        ru: "Какие документы нужны?",
+                        en: "What documents are needed?",
+                        de: "Welche Dokumente werden benötigt?"
+                    },
+                    a: {
+                        ru: "Паспорт, виза/ВНЖ, опись имущества, доверенность.",
+                        en: "Passport, Visa/Residence permit, Inventory list, Power of Attorney.",
+                        de: "Reisepass, Visum/Aufenthaltstitel, Inventarliste, Vollmacht."
+                    }
                 }
             ]
-        },
-        import: {
-            common_questions: [
-                {
-                    topic: "cost",
-                    meaning: "Стоимость зависит от объёма и маршрута. Бесплатная оценка за 24 часа."
-                },
-                {
-                    topic: "customs_presence",
-                    meaning: "Нужно ли моё присутствие при растаможке? Нет, мы представляем вас по доверенности."
-                },
-                {
-                    topic: "tax_free",
-                    meaning: "Можно ли ввезти вещи в Германию без пошлин? Да, при переезде на ПМЖ и наличии резидентства."
-                },
-                {
-                    topic: "housing_help",
-                    meaning: "Помогаете ли с арендой жилья в Германии? Да, консультируем по районам и агентствам."
-                }
-            ]
-        }
-    },
-
-    /**
-     * PROCESS BLOCK
-     * Step-by-step process, same for both directions
-     */
-    process: {
-        meaning: [
-            "Шаг 1: Бесплатная оценка стоимости и подписание договора",
-            "Шаг 2: Профессиональная упаковка ваших вещей",
-            "Шаг 3: Оформление таможенных документов",
-            "Шаг 4: Доставка door-to-door и разгрузка"
-        ]
-    },
-
-    /**
-     * CARGO TYPES
-     * What we transport (same for all routes)
-     */
-    cargo: {
-        items: [
-            { type: "furniture", meaning: "Мебель любых габаритов" },
-            { type: "electronics", meaning: "Техника и электроника" },
-            { type: "personal", meaning: "Личные вещи и документы" },
-            { type: "fragile", meaning: "Хрупкие предметы (посуда, антиквариат)" }
-        ]
-    },
-
-    /**
-     * SEO META TAGS
-     * Title and description templates
-     */
-    seo: {
-        export: {
-            title_template: "Переезд из Германии в [COUNTRY] под ключ | Intrelo",
-            description_meaning: "Профессиональный экспорт личных вещей из Германии. Упаковка, таможня, доставка door-to-door. Опыт работы с [COUNTRY]."
-        },
-        import: {
-            title_template: "Переезд из [COUNTRY] в Германию под ключ | Intrelo",
-            description_meaning: "Организация переезда в Германию: растаможка (Verzollung), оформление документов, помощь с жильём. Переезд из [COUNTRY] без стресса."
         }
     }
 };
 
 /**
- * Helper: Get blueprint for specific route
+ * Helper: Get Blueprint
  */
 export function getBlueprintForRoute(direction, block, isEU = true) {
-    const blueprint = BLUEPRINTS[block];
-    if (!blueprint) return null;
-
-    // Handle direction-specific blueprints
-    if (blueprint[direction]) {
-        const directionBlueprint = blueprint[direction];
-
-        // For customs, return appropriate logic tags
-        if (block === 'customs') {
-            return {
-                meaning: directionBlueprint.meaning,
-                logic_tags: isEU ? directionBlueprint.logic_tags_eu : directionBlueprint.logic_tags_non_eu
-            };
-        }
-
-        return directionBlueprint;
-    }
-
-    // Return generic blueprint if no direction specified
-    return blueprint;
+    const bp = BLUEPRINTS[block];
+    if (!bp) return null;
+    return bp[direction] || bp; // Directional or Generic
 }
 
-/**
- * Helper: Get timeline range for route
- */
-export function getTimelineRange(fromCountry, toCountry, isEU) {
-    if (!isEU) {
-        if (fromCountry === 'UnitedKingdom' || toCountry === 'UnitedKingdom') {
-            return BLUEPRINTS.timelines.time_ranges.non_eu_uk;
-        }
-        if (['Serbia', 'Montenegro', 'Albania', 'NorthMacedonia'].includes(fromCountry) ||
-            ['Serbia', 'Montenegro', 'Albania', 'NorthMacedonia'].includes(toCountry)) {
-            return BLUEPRINTS.timelines.time_ranges.non_eu_balkan;
-        }
-        if (fromCountry === 'Switzerland' || toCountry === 'Switzerland') {
-            return BLUEPRINTS.timelines.time_ranges.non_eu_switzerland;
-        }
-    }
-
-    // EU routes
-    const nordic = ['Sweden', 'Denmark', 'Finland', 'Norway', 'Iceland'];
-    const eastern = ['Poland', 'CzechRepublic', 'Hungary', 'Slovakia', 'Slovenia'];
-    const southern = ['Greece', 'Portugal', 'Cyprus', 'Malta'];
-
-    if (nordic.includes(fromCountry) || nordic.includes(toCountry)) {
-        return BLUEPRINTS.timelines.time_ranges.eu_nordic;
-    }
-    if (eastern.includes(fromCountry) || eastern.includes(toCountry)) {
-        return BLUEPRINTS.timelines.time_ranges.eu_eastern;
-    }
-    if (southern.includes(fromCountry) || southern.includes(toCountry)) {
-        return BLUEPRINTS.timelines.time_ranges.eu_southern;
-    }
-
-    return BLUEPRINTS.timelines.time_ranges.eu_core;
+export function getTimelineRange(fromSlug, toSlug, isEU) {
+    // Simplified logic
+    if (toSlug === 'russia' || fromSlug === 'russia') return BLUEPRINTS.timelines.time_ranges.non_eu_russia;
+    if (toSlug === 'united-kingdom' || fromSlug === 'united-kingdom') return BLUEPRINTS.timelines.time_ranges.non_eu_uk;
+    return BLUEPRINTS.timelines.time_ranges.eu_core; // Default
 }

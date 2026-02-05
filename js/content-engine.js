@@ -1,229 +1,159 @@
 /**
  * INTERCARGO Dynamic Content Engine v5 - PILOT EDITION
  * Main entry point - imports all modules and initializes the system
- * SCOPE: Germany ↔ 36 European Countries (72 Routes)
+ * SCOPE: Germany ↔ 5 Pilot Countries (10 Routes)
  */
 
-import { EUROPE_COUNTRIES, GERMANY } from './data/europe-countries.js';
+import { COUNTRIES_V2, getAllCountries } from './data/countries-v2.js';
 import { updatePageContent } from './core/engine.js';
-import { PILOT_ROUTES } from './data/routes-pilot.js';
-
-// Default State (Pilot Anchor)
-const DEFAULT_STATE = {
-    language: 'ru',
-    from_city: 'Germany', // Treating Country as "City" object for engine compatibility
-    to_city: 'France'
-};
-
-// Current State
-let pageParams = { ...DEFAULT_STATE };
-
-/**
- * LOGIC: Router & State
- */
-
-function parseUrl() {
-    // 1. Check Query Params (Priority)
-    const urlParams = new URLSearchParams(window.location.search);
-    const fromParam = urlParams.get('from_city'); // e.g. "Germany"
-    const toParam = urlParams.get('to_city');     // e.g. "Spain"
-
-    if (fromParam && toParam) {
-        // Validate against Europe Countries (handle Germany explicitly)
-        const fromObj = fromParam === 'Germany' ? GERMANY : EUROPE_COUNTRIES[fromParam];
-        const toObj = toParam === 'Germany' ? GERMANY : EUROPE_COUNTRIES[toParam];
-
-        if (fromObj && toObj) {
-            return { from_city: fromParam, to_city: toParam, language: 'ru' };
-        }
-    }
-
-    // 2. Fallback: Check Path (Legacy / SEO friendly)
-    const path = window.location.pathname;
-    const match = path.match(/\/international-moving\/([a-z-]+)-([a-z-]+)/);
-
-    if (match) {
-        const fromSlug = match[1];
-        const toSlug = match[2];
-        const fromObj = findCountryBySlug(fromSlug);
-        const toObj = findCountryBySlug(toSlug);
-
-        if (fromObj && toObj) {
-            return {
-                from_city: Object.keys(EUROPE_COUNTRIES).find(key => EUROPE_COUNTRIES[key] === fromObj),
-                to_city: Object.keys(EUROPE_COUNTRIES).find(key => EUROPE_COUNTRIES[key] === toObj),
-                language: 'ru'
-            };
-        }
-    }
-
-    return DEFAULT_STATE;
-}
-
-function findCountryBySlug(slug) {
-    return Object.values(EUROPE_COUNTRIES).find(c => c.slug === slug);
-}
-
-function updateUrl(fromKey, toKey) {
-    const fromObj = EUROPE_COUNTRIES[fromKey];
-    const toObj = EUROPE_COUNTRIES[toKey];
-
-    if (fromObj && toObj) {
-        // Use query params for the pilot to be safe and explicit
-        const url = `?from_city=${fromKey}&to_city=${toKey}`;
-        window.history.pushState({ from_city: fromKey, to_city: toKey }, '', url);
-    }
-}
-
-// Render function: Maps Countries to Engine's expected "Cities" interface
-function render() {
-    const fromKey = pageParams.from_city;
-    const toKey = pageParams.to_city;
-
-    // We treat Countries as Cities for the engine
-    const cityFromObj = EUROPE_COUNTRIES[fromKey];
-    const cityToObj = EUROPE_COUNTRIES[toKey];
-
-    // Mock the data structure the engine expects
-    // Engine expects: citiesDB[country][city]
-    // We provide: { "Europe": { "Germany": Obj, "France": Obj } }
-
-    // CRITICAL FIX: Add explicit Germany object to the DB so engine can find it
-    const MOCK_DB = {
-        "Europe": {
-            ...EUROPE_COUNTRIES,
-            "Germany": GERMANY
-        }
-    };
-
-    // Engine expects routes data
-    // We pass empty object because engine.js now uses content-manager for Pilot Routes
-    const MOCK_ROUTES = {};
-
-    // Directly call engine with constructed objects
-    // Fix: Engine looks up DB. We need to pass params that allow it to find our objects if we use standard lookup
-    // OR just pass the objects if we modify engine.js? 
-    // Current engine.js: loops through citiesDB.
-    // Let's rely on engine.js modification we did earlier?
-    // Early engine.js update: 
-    // `for (const country in citiesDB) { if (citiesDB[country][from_city]) ... }`
-
-    // So if we pass MOCK_DB = { "Europe": { "Germany": ... } } and params.from_city = "Germany"
-    // It will find match!
-
-    updatePageContent(pageParams, MOCK_DB, MOCK_ROUTES);
-}
+import { Router } from './core/router.js';
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
-    const urlState = parseUrl();
-    pageParams = { ...pageParams, ...urlState };
+    // 1. Initialize Router
+    const routerState = Router.init();
 
-    createControlPanel();
-    render();
+    // 2. Create Control Panel (Demo)
+    createControlPanel(routerState);
 
-    window.addEventListener('popstate', (event) => {
-        if (event.state) {
-            pageParams.from_city = event.state.from_city;
-            pageParams.to_city = event.state.to_city;
-            syncControls();
-            render();
-        }
+    // 3. Initial Render
+    render(routerState);
+
+    // 4. Listen for Route Changes
+    window.addEventListener('route_change', (e) => {
+        const newState = e.detail;
+        render(newState);
+        syncControls(newState);
     });
 });
 
 /**
- * REFACTORED CONTROL PANEL
- * Strict Pilot Logic: Germany <-> Europe
+ * Render function
+ * Maps V2 Country Data to Engine's expected format
  */
-function createControlPanel() {
+function render(state) {
+    const { from, to, lang } = state;
+
+    // Construct MOCK_DB expected by engine.js
+    // Engine expects: citiesDB[continent][cityKey]
+    const MOCK_DB = {
+        "Europe": COUNTRIES_V2
+    };
+
+    // Prepare Params
+    const params = {
+        from_city: from,
+        to_city: to,
+        language: lang
+    };
+
+    // Engine expects routes data (legacy), pass empty for Pilot
+    const MOCK_ROUTES = {};
+
+    console.log(`🚀 Rendering Pilot Route: ${from} -> ${to} [${lang}]`);
+    updatePageContent(params, MOCK_DB, MOCK_ROUTES);
+}
+
+/**
+ * Control Panel (Demo UI)
+ * Mounts to #pilot-controls-mount if available, otherwise appends to body.
+ */
+function createControlPanel(initialState) {
+    const mountPoint = document.getElementById('pilot-controls-mount');
     const controls = document.createElement('div');
-    controls.className = 'demo-controls';
+    controls.className = 'demo-controls pilot-controls';
 
     controls.innerHTML = `
         <div class="controls-container">
+            <div class="control-header">
+                <strong>Pilot v2 Control</strong>
+            </div>
             <div class="control-group">
-                <label>From:</label>
+                <label>Language</label>
+                <select id="lang-select">
+                    <option value="ru">RU</option>
+                    <option value="en">EN</option>
+                    <option value="de">DE</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label>From</label>
                 <select id="from-city-select"></select>
             </div>
             <div class="control-group">
-                <label>To:</label>
+                <label>To</label>
                 <select id="to-city-select"></select>
-            </div>
-            <div class="control-group">
-                <label>Lang:</label>
-                <select id="lang-select">
-                    <option value="ru" selected>RU</option>
-                </select>
             </div>
         </div>
     `;
-    document.body.appendChild(controls);
+
+    if (mountPoint) {
+        mountPoint.appendChild(controls);
+    } else {
+        document.body.appendChild(controls);
+        controls.style.position = 'fixed';
+        controls.style.bottom = '20px';
+        controls.style.right = '20px';
+        controls.style.zIndex = '9999';
+    }
 
     // Initial Population
-    updateSelectors();
+    const countries = getAllCountries();
+    populateSelect('from-city-select', countries, initialState.from);
+    populateSelect('to-city-select', countries, initialState.to);
+    document.getElementById('lang-select').value = initialState.lang;
 
     // Event Listeners
     document.getElementById('from-city-select').addEventListener('change', (e) => {
-        pageParams.from_city = e.target.value;
+        const fromVal = e.target.value;
+        const currentTo = Router.getState().to;
+        let newTo = currentTo;
 
-        // AUTO-LOCK LOGIC
-        // If From is Germany -> To can be any EU (default to France if currently Germany)
-        // If From is EU -> To MUST be Germany
-        if (pageParams.from_city === 'Germany') {
-            if (pageParams.to_city === 'Germany') pageParams.to_city = 'France';
+        // Auto-lock Logic: Germany <-> Others
+        if (fromVal === 'germany') {
+            if (newTo === 'germany') newTo = 'spain'; // Default to Spain if From was Germany
         } else {
-            pageParams.to_city = 'Germany';
+            newTo = 'germany';
         }
 
-        updateSelectors(); // Re-render To options based on lock
-        updateUrl(pageParams.from_city, pageParams.to_city);
-        render();
+        Router.navigate(fromVal, newTo);
     });
 
     document.getElementById('to-city-select').addEventListener('change', (e) => {
-        pageParams.to_city = e.target.value;
-        updateUrl(pageParams.from_city, pageParams.to_city);
-        render();
+        Router.navigate(Router.getState().from, e.target.value);
+    });
+
+    document.getElementById('lang-select').addEventListener('change', (e) => {
+        Router.setLanguage(e.target.value);
     });
 }
 
-function updateSelectors() {
-    const fromSelect = document.getElementById('from-city-select');
-    const toSelect = document.getElementById('to-city-select');
+function populateSelect(id, countries, selectedSlug) {
+    const select = document.getElementById(id);
+    select.innerHTML = '';
 
-    // 1. Populate FROM
-    // Can be Germany OR any EU country
-    let fromHtml = `<option value="Germany" ${pageParams.from_city === 'Germany' ? 'selected' : ''}>Germany (Anchor)</option>`;
-    fromHtml += `<optgroup label="Europe">`;
-    Object.keys(EUROPE_COUNTRIES).forEach(key => {
-        if (key === 'Germany') return;
-        const selected = pageParams.from_city === key ? 'selected' : '';
-        fromHtml += `<option value="${key}" ${selected}>${key}</option>`;
+    // Sort: Germany first, then others
+    const sorted = [...countries].sort((a, b) => {
+        if (a.slug === 'germany') return -1;
+        if (b.slug === 'germany') return 1;
+        return a.names.ru.localeCompare(b.names.ru);
     });
-    fromHtml += `</optgroup>`;
-    fromSelect.innerHTML = fromHtml;
 
-    // 2. Populate TO based on FROM
-    let toHtml = '';
-
-    if (pageParams.from_city === 'Germany') {
-        // Export: To can be any EU country (exclude Germany)
-        Object.keys(EUROPE_COUNTRIES).forEach(key => {
-            if (key === 'Germany') return;
-            const selected = pageParams.to_city === key ? 'selected' : '';
-            toHtml += `<option value="${key}" ${selected}>${key}</option>`;
-        });
-        toSelect.disabled = false;
-    } else {
-        // Import: To MUST be Germany
-        toHtml = `<option value="Germany" selected>Germany</option>`;
-        // toSelect.disabled = true; // Optional: disable to visualize lock
-    }
-
-    toSelect.innerHTML = toHtml;
+    sorted.forEach(c => {
+        const option = document.createElement('option');
+        option.value = c.slug;
+        option.textContent = `${c.names.ru} (${c.slug})`;
+        if (c.slug === selectedSlug) option.selected = true;
+        select.appendChild(option);
+    });
 }
 
-function syncControls() {
-    updateSelectors();
+function syncControls(state) {
+    const fromSel = document.getElementById('from-city-select');
+    const toSel = document.getElementById('to-city-select');
+    const langSel = document.getElementById('lang-select');
+
+    if (fromSel) fromSel.value = state.from;
+    if (toSel) toSel.value = state.to;
+    if (langSel) langSel.value = state.lang;
 }

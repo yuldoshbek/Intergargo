@@ -1,98 +1,142 @@
 /**
  * INTERCARGO - Dynamic Route Generator
- * Generates content for arbitrary city pairs on the fly.
+ * Generates deterministic content based on blueprints and route data.
  */
 
+import { getBlueprintForRoute, getTimelineRange } from './blueprints.js';
+import { getCountryName, getCountryPreposition } from './engine.js';
+
+// Simple deterministic RNG
+function getHash(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        const char = str.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash; // Convert to 32bit integer
+    }
+    return Math.abs(hash);
+}
+
+function selectDeterministically(array, seed) {
+    if (!array || array.length === 0) return "";
+    const index = seed % array.length;
+    return array[index];
+}
+
 export function generateRouteContent(cityFrom, cityTo, language) {
-    const isRu = language === 'ru';
+    const routeSlug = `${cityFrom.slug}-${cityTo.slug}`;
+    const seed = getHash(routeSlug);
 
-    // 1. Generate SEO & Hero Data
-    const hero = {
-        title: isRu
-            ? `Переезд из ${cityFrom.from} <span>${cityTo.to}</span>`
-            : `Relocation from ${cityFrom.en} <span>to ${cityTo.en}</span>`,
-        subtitle: isRu
-            ? `Полный комплекс услуг по международному переезду: таможенное оформление, упаковка и доставка «от двери до двери».`
-            : `Full international moving services: customs clearance, professional packing, and door-to-door delivery.`,
-        en_subtitle: `Full international moving services: customs clearance, professional packing, and door-to-door delivery.`
-    };
+    // Determine Logic/Direction
+    // Germany -> X (Export) if From is Germany
+    // X -> Germany (Import) if To is Germany
+    // Generic otherwise
+    let direction = 'generic';
+    if (cityFrom.slug === 'germany') direction = 'export';
+    else if (cityTo.slug === 'germany') direction = 'import';
 
-    // 2. Generate Customs Data
+    const isEU = (cityFrom.eu !== false) && (cityTo.eu !== false);
+
+    // --- 1. HERO ---
+    const fromName = getCountryPreposition(cityFrom, 'from', language);
+    const toName = getCountryPreposition(cityTo, 'to', language);
+
+    // Fallback strings if blueprints miss
+    const heroTitle = language === 'ru'
+        ? `Переезд из ${fromName} ${toName}`
+        : `Relocation from ${getCountryName(cityFrom, 'en')} to ${getCountryName(cityTo, 'en')}`;
+
+    // --- 2. CUSTOMS ---
+    const customsBP = getBlueprintForRoute(direction, 'customs', isEU);
+    let customsText = "";
+    let logicTags = [];
+
+    if (customsBP) {
+        const textOptions = customsBP.meaning[language] || customsBP.meaning.ru;
+        customsText = selectDeterministically(textOptions, seed);
+        logicTags = customsBP.logic_tags || [];
+    }
+
     const customs = {
-        logic: ["EXPORT-DOCS", "TRANSIT", "IMPORT-Rules"],
-        ru: `Оформление экспорта из страны выбытия (${cityFrom.ru}) и импорта в страну назначения (${cityTo.ru}). Мы готовим полный пакет документов, включая опись имущества и таможенные декларации, чтобы ваш груз прошел границу без задержек.`,
-        en: `Export clearance from ${cityFrom.en} and import into ${cityTo.en}. We prepare the full export/import documentation package, including detailed inventory lists and customs declarations, ensuring your cargo crosses borders without delays.`
+        text: customsText,
+        logic: logicTags,
+        [language]: customsText // Legacy compat
     };
 
-    // 3. Generate FAQ Data
-    const faq = [
-        {
-            q: `Сколько стоит переезд из ${cityFrom.from} ${cityTo.to}?`,
-            a: `Стоимость зависит от объема груза (м³) и выбранного типа транспорта. Оставьте заявку, и мы рассчитаем точную смету в течение 24 часов.`,
-            en_q: `How much does moving from ${cityFrom.en} to ${cityTo.en} cost?`,
-            en_a: `The cost depends on the cargo volume (cbm) and transport mode. Request a quote, and we will provide a precise estimate within 24 hours.`
-        },
-        {
-            q: `Нужно ли мне присутствовать при растаможке?`,
-            a: `В большинстве случаев ваше личное присутствие на таможне не требуется. Мы выступаем вашим таможенным представителем по доверенности.`,
-            en_q: `Do I need to be present for customs clearance?`,
-            en_a: `In most cases, your personal presence is not required. We act as your customs broker via power of attorney.`
-        },
-        {
-            q: `Сколько времени занимает доставка?`,
-            a: `Сроки зависят от маршрута. Для направления ${cityFrom.ru} — ${cityTo.ru} ориентировочное время составляет от 7 до 21 дня.`,
-            en_q: `How long does delivery take?`,
-            en_a: `Transit times depend on the route. For ${cityFrom.en} — ${cityTo.en}, estimated delivery time is between 7 to 21 days.`
-        }
+    // --- 3. TIMELINES ---
+    const timelinesBP = getBlueprintForRoute(direction, 'timelines');
+    let timelineText = "";
+    if (timelinesBP) {
+        const tOptions = timelinesBP.meaning[language] || timelinesBP.meaning.ru;
+        timelineText = selectDeterministically(tOptions, seed + 1);
+    }
+    const timeRange = getTimelineRange(cityFrom.slug, cityTo.slug, isEU);
+
+    const timelines = {
+        text: timelineText,
+        time_range: timeRange,
+        [language]: timelineText
+    };
+
+    // --- 4. PROCESS ---
+    const processBP = getBlueprintForRoute(direction, 'process');
+    const processSteps = (processBP && processBP.meaning[language])
+        ? processBP.meaning[language].map((step, i) => {
+            // Split "1. Title" from text if formatted like that, or just use as desc
+            // Current blueprint has "1. Title" strings.
+            return { title: step, desc: "" }; // Simplified
+        })
+        : [];
+
+    // --- 5. FAQ ---
+    // FAQ is structure differently in new blueprints (questions: [{q:{ru...}, a:{ru...}}])
+    const faqBP = getBlueprintForRoute(direction, 'faq'); // might be nested under export/import
+    const faqData = [];
+    if (faqBP && faqBP.questions) {
+        faqBP.questions.forEach(qObj => {
+            faqData.push({
+                q: qObj.q[language] || qObj.q.ru,
+                a: qObj.a[language] || qObj.a.ru
+            });
+        });
+    }
+
+    // --- 6. CARGO ---
+    // Using static list from legacy generator logic but localized
+    // We can add this to blueprints later if needed
+    const cargoItems = [
+        { icon: "assets/img/icons/furniture.svg", title: { ru: "Мебель", en: "Furniture", de: "Möbel" } },
+        { icon: "assets/img/icons/electronics.svg", title: { ru: "Техника", en: "Electronics", de: "Elektronik" } },
+        { icon: "assets/img/icons/boxes.svg", title: { ru: "Личные вещи", en: "Personal Items", de: "Persönliche Sachen" } },
+        { icon: "assets/img/icons/fragile.svg", title: { ru: "Хрупкое", en: "Fragile", de: "Zerbrechliches" } }
     ];
 
-    // 4. Generate Process Steps
-    const process = [
-        {
-            title: "Оценка и договор",
-            desc: "Бесплатный расчет стоимости и подписание договора.",
-            en_title: "Quote & Contract",
-            en_desc: "Free cost estimation and contract signing."
-        },
-        {
-            title: "Упаковка",
-            desc: "Профессиональная упаковка ваших вещей.",
-            en_title: "Packing",
-            en_desc: "Professional packing of your belongings."
-        },
-        {
-            title: "Таможня",
-            desc: "Оформление всех документов.",
-            en_title: "Customs",
-            en_desc: "Handling all documentation."
-        },
-        {
-            title: "Доставка",
-            desc: `Транспортировка ${cityTo.to} и разгрузка.`,
-            en_title: "Delivery",
-            en_desc: `Transport to ${cityTo.en} and unloading.`
-        }
-    ];
-
-    // 5. Generate Cargo Types
     const cargo = {
-        items: [
-            { icon: "assets/img/icons/furniture.svg", title: "Мебель", en_title: "Furniture" },
-            { icon: "assets/img/icons/electronics.svg", title: "Техника", en_title: "Electronics" },
-            { icon: "assets/img/icons/boxes.svg", title: "Личные вещи", en_title: "Personal Items" },
-            { icon: "assets/img/icons/fragile.svg", title: "Хрупкое", en_title: "Fragile" }
-        ]
+        items: cargoItems.map(item => ({
+            icon: item.icon,
+            title: item.title[language] || item.title.ru
+        }))
     };
+
+    // --- 7. SEO ---
+    // Construct SEO based on route
+    // Could use blueprints if defined, for now use logic from seo.js concept
+    // But route-generator creates content object, which might be used by engine.js to set SEO.
+    // Engine lines 58: updateSEO(cityFrom, cityTo, language). it ignores routeContent.seo for Dynamic routes?
+    // Wait, updateSEOFromContent (line 409) is used for STORE content.
+    // Standard updatePageContent uses updateSEO(cityFrom, cityTo, language) which generates it.
+    // So we don't strictly need to return fancy SEO here for dynamic routes, but good to have.
 
     return {
-        hero,
+        hero: {
+            title: heroTitle,
+            subtitle: "..." // Can add blueprint selection here
+        },
         customs,
-        faq,
-        process,
+        timelines,
+        process: processSteps,
+        faq: faqData,
         cargo,
-        subtitles: {
-            what_we_transport: { ru: "Что мы перевозим", en: "What We Transport" },
-            packaging: { ru: "Упаковка", en: "Packaging" }
-        }
+        internal_links: [] // Generated by helper in engine or omitted
     };
 }
